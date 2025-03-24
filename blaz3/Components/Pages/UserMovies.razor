@@ -1,0 +1,148 @@
+﻿@page "/movies"
+@using blaz3.Model
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+
+    h3 {
+        color: #8b00ff;
+    }
+
+    .btn-primary {
+        background-color: #8b00ff;
+        border-color: #8b00ff;
+    }
+
+        .btn-primary:hover {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+    .card {
+        border: none;
+        margin: 15px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s;
+    }
+
+        .card:hover {
+            transform: scale(1.05);
+        }
+
+    .card-body {
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: end;
+    }
+
+    .card-title {
+        font-weight: bold;
+    }
+
+    .card-deck {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+    }
+
+    .search-container {
+        margin-bottom: 20px;
+    }
+</style>
+
+<h3>Каталог фильмов</h3>
+
+<div class="search-container">
+    <label for="movieSearch" class="form-label">Введите название фильма для поиска:</label>
+    <InputText id="movieSearch" @bind-Value="searchTerm" @oninput="SearchMovieByTitle" class="form-control" />
+</div>
+
+@if (movies == null)
+{
+    <p><em>Загрузка...</em></p>
+}
+else
+{
+    <div class="card-deck">
+        @foreach (var movie in movies)
+        {
+            <div class="card" style="width: 18rem;">
+                <img src="@movie.ImageUrl" class="card-img-top" alt="@movie.Title" />
+                <div class="card-body">
+                    <h5 class="card-title">@movie.Title</h5>
+                    <p class="card-text">Жанр: @movie.Genre</p>
+                    <p class="card-text">Рейтинг: @movie.Rating / 10</p>
+                    <NavLink href="@($"/movies/{movie.Id}")" class="btn btn-primary">Подробнее</NavLink>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<Movie> movies = new List<Movie>();
+    private string searchTerm = string.Empty;
+    private Movie newMovie = new Movie();
+    private string searchTitle;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMovies();
+    }
+
+    private async Task LoadMovies()
+    {
+        try
+        {
+            var response = await Http.GetAsync("api/Movie");
+            if (response.IsSuccessStatusCode)
+            {
+                movies = await response.Content.ReadFromJsonAsync<List<Movie>>();
+            }
+        }
+        catch (Exception ex)
+        {
+            movies = new List<Movie>();
+        }
+    }
+
+    private async Task SearchMovieByTitle(ChangeEventArgs e)
+    {
+        searchTitle = e.Value.ToString();
+
+        if (string.IsNullOrWhiteSpace(searchTitle))
+        {
+            await LoadMovies();
+            return;
+        }
+
+        try
+        {
+            var response = await Http.GetAsync($"api/Movie/SearchByTitle?title={Uri.EscapeDataString(searchTitle)}");
+            if (response.IsSuccessStatusCode)
+            {
+                movies = await response.Content.ReadFromJsonAsync<List<Movie>>();
+            }
+            else
+            {
+                movies = new List<Movie>();
+            }
+        }
+        catch (Exception ex)
+        {
+            movies = new List<Movie>();
+        }
+    }
+
+    private void ResetForm()
+    {
+        newMovie = new Movie();
+    }
+}

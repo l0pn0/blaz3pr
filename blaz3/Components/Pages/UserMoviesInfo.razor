@@ -1,0 +1,100 @@
+﻿@page "/movies/{Id:int}"
+@using blaz3.Model
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<style>
+    .movie-details-container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        text-align: center; /* Центрируем все содержимое внутри контейнера */
+    }
+
+    h3 {
+        color: #8b00ff;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    h4 {
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    img {
+        max-width: 200px;
+        height: auto;
+        border: 2px solid #8b00ff; /* Фиолетовая рамка */
+        border-radius: 4px;
+        padding: 5px;
+        margin-bottom: 15px;
+    }
+
+    p {
+        color: #555;
+        margin-bottom: 8px;
+    }
+
+    .btn-primary {
+        background-color: #8b00ff !important; /* Фиолетовый цвет */
+        border-color: #8b00ff !important;
+        color: white;
+    }
+
+        .btn-primary:hover {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+</style>
+
+<div class="movie-details-container">
+    <div class="movie-image-container">
+        @if (movie != null)
+        {
+            <img src="@movie.ImageUrl" alt="@movie.Title" />
+        }
+    </div>
+    <div>
+        <h3>Подробная информация о фильме</h3>
+        @if (movie == null)
+        {
+            <p><em>Загрузка...</em></p>
+        }
+        else
+        {
+            <div>
+                <h4>@movie.Title</h4>
+                <p><strong>Описание:</strong> @movie.Description</p>
+                <p><strong>Жанр:</strong> @movie.Genre</p>
+                <p><strong>Дата выхода:</strong> @movie.ReleaseDate.ToShortDateString()</p>
+                <p><strong>Рейтинг:</strong> @movie.Rating</p>
+                <NavLink class="btn btn-primary" @onclick="SaveMoveTitle">Обсудить фильм</NavLink>
+                <NavLink class="btn btn-primary" href="/movies">Назад к списку</NavLink>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+    private Movie? movie;
+    private bool isLoading = true;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        movie = await Http.GetFromJsonAsync<Movie>($"http://localhost:5082/api/movie/{Id}");
+    }
+    private async Task SaveMoveTitle()
+    {
+        await JS.InvokeVoidAsync("localStorage.setItem", "titleMovie", movie.Title);
+        NavigationManager.NavigateTo($"/discussion/{movie.Id}");
+    }
+}

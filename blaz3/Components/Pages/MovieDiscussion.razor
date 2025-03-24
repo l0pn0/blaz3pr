@@ -1,0 +1,264 @@
+﻿@page "/discussion/{movieId}"
+@using System.Net.Http.Headers
+@using Microsoft.AspNetCore.SignalR.Client
+@using blaz3.Model
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<div class="chat-panel-container">
+    <h3 class="chat-title">Общий чат ✉ @movieName</h3>
+
+    <div class="chat-container">
+        <div class="chat-messages">
+            @foreach (var msg in messages)
+            {
+                <div class="chat-message">
+                    <NavLink href=@($"/userchat/{msg.UserId}?recipientName={msg.UserName}")>@msg.UserName</NavLink>:
+                    @if (msg.Message.Contains("[Изображение:"))
+                    {
+                        var imagePath = msg.Message.Substring(msg.Message.IndexOf("[Изображение:") + "[Изображение: ".Length);
+                        imagePath = imagePath.TrimEnd(']');
+                        <span>@msg.Message.Substring(0, msg.Message.IndexOf("[Изображение:"))</span> 
+                        <img src="@imagePath" alt="Image" style="max-width: 20%; border-radius: 8px; margin-top: 5px;" />
+                    }
+                    else
+                    {
+                        <span>@msg.Message</span>
+                    }
+                    <span class="message-time">@msg.Timestamp.ToString("HH:mm:ss")</span>
+                </div>
+            }
+        </div>
+
+        <div class="input-group">
+            <div class="input-group">
+                <InputFile OnChange="HandleSelectedFile" class="file-input" />
+                <input type="text" @bind="message" class="form-control" placeholder="Ваше сообщение..." />
+                <button @onclick="SendMessageGeneral" class="btn btn-send">📤</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    body {
+        background-color: #f0f0f0;
+        font-family: 'Arial', sans-serif;
+        color: #333;
+        margin: 0;
+        padding: 0;
+    }
+
+    .chat-panel-container {
+        max-width: 500px;
+        margin: 50px auto;
+        padding: 20px;
+        background-color: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        text-align: left;
+    }
+
+    .chat-title {
+        text-align: center;
+        color: #4a90e2;
+        margin-bottom: 20px;
+        font-size: 26px;
+    }
+
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: 400px;
+    }
+
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 10px;
+        margin-bottom: 10px;
+    }
+
+    .chat-message {
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 8px;
+        background-color: #e3f2fd;
+        position: relative;
+    }
+
+        .chat-message strong {
+            color: #4a90e2;
+        }
+
+    .message-time {
+        font-size: 0.7em;
+        position: absolute;
+        bottom: 5px;
+        right: 10px;
+        color: #888;
+    }
+
+    .input-group {
+        display: flex;
+        align-items: center;
+    }
+
+    .form-control {
+        border: 1px solid #ccc;
+        background-color: #f9f9f9;
+        color: #333;
+        padding: 10px;
+        border-radius: 5px 0 0 5px;
+        flex: 1;
+    }
+
+        .form-control::placeholder {
+            color: #bbb;
+        }
+
+    .btn-send {
+        background-color: #4a90e2;
+        border: none;
+        color: #ffffff;
+        padding: 10px;
+        border-radius: 0 5px 5px 0;
+        transition: background 0.3s ease;
+        cursor: pointer;
+    }
+
+        .btn-send:hover {
+            background-color: #357ab8;
+        }
+</style>
+
+@code {
+    string message = "";
+    string userId = "";
+    string userName = "";
+    string movieName = "";
+    [Parameter]
+    public string movieId { get; set; }
+    HubConnection hubConnection;
+    List<ChatMessage> messages = new List<ChatMessage>();
+    private IBrowserFile selectedFile;
+
+    private Timer _timer;
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder().WithUrl("http://localhost:5082/generalHub").Build();
+
+        await hubConnection.StartAsync();
+        await hubConnection.SendAsync("JoinMovieGroup", movieId);
+
+        await LoadMessages();
+
+        hubConnection.On<string, string, string>("ReceiveMessageGeneral", (userId, userName, message) =>
+        {
+            messages.Add(new ChatMessage
+                {
+                    UserId = userId,
+                    UserName = userName,
+                    Message = message,
+                    Timestamp = DateTime.UtcNow
+                });
+
+            InvokeAsync(StateHasChanged);
+        });
+        _timer = new Timer(async _ =>
+            {
+                await LoadMessages();
+                await InvokeAsync(StateHasChanged);
+            }, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
+    }
+
+    private async Task LoadMessages()
+    {
+        try
+        {
+            var loadedMessages = await Http.GetFromJsonAsync<List<ChatMessage>>($"api/Chat/movie/{movieId}");
+            messages = loadedMessages ?? new List<ChatMessage>();
+        }
+        catch (HttpRequestException ex)
+        {
+            Console.WriteLine($"Ошибка при загрузке сообщений: {ex.Message}");
+            messages = new List<ChatMessage>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Неизвестная ошибка: {ex.Message}");
+            messages = new List<ChatMessage>();
+        }
+        finally
+        {
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task HandleSelectedFile(InputFileChangeEventArgs e)
+    {
+        var files = e.GetMultipleFiles(1);
+        selectedFile = files.FirstOrDefault();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            userId = await JS.InvokeAsync<string>("localStorage.getItem", "currentUserId");
+            userName = await JS.InvokeAsync<string>("localStorage.getItem", "currentUserName");
+            movieName = await JS.InvokeAsync<string>("localStorage.getItem", "titleName");
+            StateHasChanged();
+        }
+    }
+
+    async Task SendMessageGeneral()
+    {
+        if (!string.IsNullOrWhiteSpace(message) || selectedFile != null)
+        {
+            if (selectedFile != null)
+            {
+                var filePath = Path.Combine("wwwroot/images", selectedFile.Name);
+
+                using (var stream = selectedFile.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024))
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await stream.CopyToAsync(fileStream);
+                }
+
+                message += $" [Изображение: {filePath.Replace("wwwroot", "")}]";
+            }
+
+            var newMessage = new ChatMessage
+                {
+                    UserId = userId,
+                    UserName = userName,
+                    Message = message,
+                    Timestamp = DateTime.UtcNow
+                };
+
+            messages.Add(newMessage);
+            InvokeAsync(StateHasChanged);
+            await hubConnection.SendAsync("SendMessageGeneral", movieId, userId, userName, newMessage.Message);
+            message = string.Empty;
+            selectedFile = null;
+        }
+    }
+
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_timer != null)
+        {
+            _timer.Dispose();
+        }
+
+        if (hubConnection != null)
+        {
+            await hubConnection.SendAsync("LeaveMovieGroup", movieId);
+            await hubConnection.DisposeAsync();
+        }
+    }
+}

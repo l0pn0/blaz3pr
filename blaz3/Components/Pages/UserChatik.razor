@@ -1,0 +1,258 @@
+﻿@page "/userchat/{recipientUserIdd}"
+@using System.Net.Http.Headers
+@using Microsoft.AspNetCore.SignalR.Client
+@using blaz3.Model
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<div class="chat-panel-container">
+    <h3 class="chat-title">@ChatTitle</h3>
+
+    <div class="chat-container">
+        <div class="chat-messages">
+            @foreach (var msg in messages)
+            {
+                <div class="chat-message">
+                    <span class="message-user">@msg.SenderName:</span> @msg.Message
+                    <span class="message-time">@msg.Timestamp.ToString("HH:mm:ss")</span>
+                </div>
+            }
+        </div>
+
+        <div class="input-group">
+            <input type="text" @bind="message" class="form-control" placeholder="Ваше сообщение..." />
+            <button @onclick="SendMessagePersonal" class="btn btn-send">✉</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    body {
+        background-color: #f0f0f0;
+        font-family: 'Arial', sans-serif;
+        color: #333;
+        margin: 0;
+        padding: 0;
+    }
+
+    .chat-panel-container {
+        max-width: 500px;
+        margin: 50px auto;
+        padding: 20px;
+        background-color: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        text-align: left;
+    }
+
+    .chat-title {
+        text-align: center;
+        color: #4a90e2;
+        margin-bottom: 20px;
+        font-size: 26px;
+    }
+
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: 400px;
+    }
+
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 10px;
+        margin-bottom: 10px;
+    }
+
+    .chat-message {
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 8px;
+        background-color: #e3f2fd;
+        position: relative;
+    }
+
+        .chat-message strong {
+            color: #4a90e2;
+        }
+
+    .message-time {
+        font-size: 0.7em;
+        position: absolute;
+        bottom: 5px;
+        right: 10px;
+        color: #888;
+    }
+
+    .input-group {
+        display: flex;
+        align-items: center;
+    }
+
+    .form-control {
+        border: 1px solid #ccc;
+        background-color: #f9f9f9;
+        color: #333;
+        padding: 10px;
+        border-radius: 5px 0 0 5px;
+        flex: 1;
+    }
+
+        .form-control::placeholder {
+            color: #bbb;
+        }
+
+    .btn-send {
+        background-color: #4a90e2;
+        border: none;
+        color: #ffffff;
+        padding: 10px;
+        border-radius: 0 5px 5px 0;
+        transition: background 0.3s ease;
+        cursor: pointer;
+    }
+
+        .btn-send:hover {
+            background-color: #357ab8;
+        }
+</style>
+
+@code {
+    string message = "";
+    string currentUserId = "";
+    string senderName = "";
+    [Parameter]
+    public string recipientUserIdd { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "recipientName")]
+    public string RecipientName { get; set; }
+
+    HubConnection hubConnection;
+    List<UserChat> messages = new List<UserChat>();
+
+    private string ChatTitle { get; set; } = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder().WithUrl("http://localhost:5082/userChatHub").Build();
+
+        hubConnection.On<string, string, string>("ReceiveMessage", (senderId, senderName, message) =>
+        {
+            Console.WriteLine($"Received message: {message} from {senderName}");
+            UserChat newMessage = new UserChat
+                {
+                    SenderId = senderId,
+                    SenderName = senderName,
+                    RecipientId = recipientUserIdd,
+                    Message = message,
+                    Timestamp = DateTime.UtcNow
+                };
+            messages.Add(newMessage);
+            InvokeAsync(StateHasChanged);
+        });
+
+        try
+        {
+            await hubConnection.StartAsync();
+            await LoadMessages();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка подключения к хабу: {ex.Message}");
+        }
+    }
+
+    private async Task LoadMessages()
+    {
+        try
+        {
+            messages = await Http.GetFromJsonAsync<List<UserChat>>($"api/UserChat/userchat/{recipientUserIdd}/{currentUserId}");
+            InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Не удалось загрузить сообщения: {ex.Message}");
+            messages = new List<UserChat>();
+        }
+        finally
+        {
+            StateHasChanged();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            currentUserId = await JS.InvokeAsync<string>("localStorage.getItem", "currentUserId");
+            senderName = await JS.InvokeAsync<string>("localStorage.getItem", "currentUserName");
+
+            // Проверка на совпадение ID для установки заголовка
+            if (currentUserId == recipientUserIdd)
+            {
+                ChatTitle = "Избранное";
+            }
+            else
+            {
+                ChatTitle = $"Личные сообщения с {RecipientName}";
+            }
+
+            StateHasChanged();
+        }
+    }
+
+    async Task SendMessagePersonal()
+    {
+        if (!string.IsNullOrWhiteSpace(message))
+        {
+            var newMessage = new UserChat
+                {
+                    SenderId = currentUserId,
+                    SenderName = senderName,
+                    RecipientId = recipientUserIdd,
+                    Message = message,
+                    Timestamp = DateTime.UtcNow
+                };
+
+            Console.WriteLine($"Sending message: {newMessage.Message} from {newMessage.SenderName} to {newMessage.RecipientId}");
+
+            try
+            {
+                //  API для отправки сообщения в базу данных
+                var response = await Http.PostAsJsonAsync("api/UserChat/send", newMessage);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine("Сообщение успешно отправлено через API.");
+
+                    await hubConnection.SendAsync("SendMessage", newMessage.RecipientId, newMessage.SenderId, newMessage.SenderName, newMessage.Message);
+
+                    messages.Add(newMessage);
+                    InvokeAsync(StateHasChanged);
+                }
+                else
+                {
+                    Console.WriteLine($"Ошибка при отправке сообщения через API: {response.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Исключение при отправке сообщения через API: {ex.Message}");
+            }
+
+            message = string.Empty; // Очистить поле ввода
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection != null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+}

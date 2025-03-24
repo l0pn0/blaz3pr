@@ -1,0 +1,61 @@
+﻿@page "/chat"
+@using Microsoft.AspNetCore.SignalR.Client
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+<h3>Chat</h3>
+
+<div>
+    <input type="text" @bind = "iUser" placeholder="Имя"/>
+    <button @onclick="RegUser"> Send</button>
+</div>
+
+<div>
+    <input type="text" @bind="user" placeholder="Имя" />
+    <input type="text" @bind="message" placeholder="Сообщение" />
+    <button @onclick="SendMessage"> Send</button>
+</div>
+
+<div>
+    @foreach (var msg in messages)
+    {
+        <p>
+            @msg
+        </p>
+    }
+</div>
+
+    
+@code {
+    string iUser = "";
+    string message = "";
+    string user = "";
+    HubConnection hubConnection;
+    List<string> messages = new List<string>();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder().WithUrl("http://localhost:5082/chatHub").Build();
+
+        hubConnection.On<string, string>("RecieveMessage", (user, message) =>
+        {
+            messages.Add($"{user}: {message}");
+            InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    async Task SendMessage()
+    {
+        await hubConnection.SendAsync("SendMessage", user, iUser, message);
+        messages.Add($"{iUser}: {message}");
+        message = string.Empty;
+    }
+
+    async Task RegUser()
+    {
+        await hubConnection.SendAsync("RegisterUser", iUser);
+    }
+}
