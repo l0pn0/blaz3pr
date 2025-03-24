@@ -71,27 +71,27 @@
 
                 <div class="form-group">
                     <label for="name">Имя</label>
-                    <InputText @bind-Value="newUser.Name" id="name" placeholder="Введите ваше имя" class="form-control" />
+                    <InputText @bind-value="@newUser.Name" id="name" placeholder="Введите ваше имя" class="form-control" />
                 </div>
 
                 <div class="form-group">
                     <label for="email">Email</label>
-                    <InputText @bind-Value="newUser.Email" id="email" placeholder="Введите ваш email" class="form-control" />
+                    <InputText @bind-value="@newUser.Email" id="email" placeholder="Введите ваш email" class="form-control" />
                 </div>
 
                 <div class="form-group">
                     <label for="description">Описание</label>
-                    <InputText @bind-Value="newUser.Description" id="description" placeholder="Введите описание" class="form-control" />
+                    <InputText @bind-value="@newUser.Description" id="description" placeholder="Введите описание" class="form-control" />
                 </div>
 
                 <div class="form-group">
                     <label for="password">Пароль</label>
-                    <InputText @bind-Value="newUser.Password" id="password" type="password" placeholder="Введите пароль" class="form-control" />
+                    <InputText @bind-value="@newUser.Password" id="password" type="password" placeholder="Введите пароль" class="form-control" />
                 </div>
 
 
                 <div class="form-check mb-3">
-                    <InputCheckbox @bind-Value="isAdmin" class="form-check-input" />
+                    <InputCheckbox @bind-value="isAdmin" class="form-check-input" />
                     <label class="form-check-label">Администратор</label>
                 </div>
 
@@ -107,7 +107,7 @@
 
 @code {
 
-    private User newUser = new User();
+    public User newUser = new User();
     private bool isAdmin = false;
 
     private async Task HandleRegister()
