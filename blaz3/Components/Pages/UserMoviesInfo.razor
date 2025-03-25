@@ -6,50 +6,63 @@
 @rendermode InteractiveServer
 
 <style>
+    body {
+        background-color: #f8f9fa; /* Светлый фон */
+        font-family: 'Arial', sans-serif; /* Шрифт */
+    }
+
     .movie-details-container {
         max-width: 800px;
         margin: 20px auto;
-        padding: 20px;
-        background-color: #fff;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        text-align: center; /* Центрируем все содержимое внутри контейнера */
+        padding: 25px;
+        background-color: #fff; /* Белый фон */
+        border-radius: 10px; /* Закругленные углы */
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Тень для контейнера */
+        text-align: center; /* Центрируем содержимое */
     }
 
     h3 {
-        color: #8b00ff;
+        color: #5e4b8a; /* Цвет заголовка */
         margin-bottom: 20px;
-        text-align: center;
+        font-weight: bold;
+        font-size: 1.8rem;
     }
 
     h4 {
-        color: #333;
-        margin-bottom: 10px;
+        color: #333; /* Темно-серый цвет заголовка фильма */
+        margin-bottom: 15px;
+        font-size: 1.4rem;
     }
 
     img {
-        max-width: 200px;
+        max-width: 250px; /* Изображение чуть больше */
         height: auto;
-        border: 2px solid #8b00ff; /* Фиолетовая рамка */
-        border-radius: 4px;
-        padding: 5px;
-        margin-bottom: 15px;
+        border: none; /* Убираем рамку */
+        border-radius: 8px; /* Легкое скругление углов */
+        margin-bottom: 20px;
     }
 
     p {
-        color: #555;
-        margin-bottom: 8px;
+        color: #555; /* Более светлый текст */
+        font-size: 1rem;
+        margin-bottom: 10px;
     }
 
     .btn-primary {
-        background-color: #8b00ff !important; /* Фиолетовый цвет */
-        border-color: #8b00ff !important;
-        color: white;
+        background-color: #6f42c1 !important; /* Фиолетовый фон */
+        color: white !important; /* Белый текст */
+        border: none !important; /* Убираем рамки */
+        border-radius: 5px; /* Скругленные углы */
+        padding: 12px 20px; /* Отступы */
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s; /* Плавный переход */
+        margin-top: 10px; /* Разделяем кнопки */
     }
 
         .btn-primary:hover {
-            background-color: #007bff;
-            border-color: #007bff;
+            background-color: #5e4b8a !important; /* Цвет при наведении */
         }
 </style>
 
@@ -90,7 +103,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        movie = await Http.GetFromJsonAsync<Movie>($"http://localhost:5082/api/movie/{Id}");
+        movie = await Http.GetFromJsonAsync<Movie>($"http://localhost:5183/api/movie/{Id}");
     }
     private async Task SaveMoveTitle()
     {

@@ -2,59 +2,70 @@
 @inject NavigationManager NavigationManager
 
 <style>
-    .admin-panel-container {
-        max-width: 600px;
-        margin: auto;
-        padding: 50px;
-        background-color: #ffffff;
-        border-radius: 10px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        text-align: center;
+    body {
+        background-color: #f8f9fa; /* Светлый фон */
+        font-family: 'Arial', sans-serif; /* Шрифт */
     }
 
-    h3 {
-        color: #8b00ff;
-        margin-bottom: 20px;
+    h4 {
+        color: #5e4b8a; /* Цвет заголовка */
+        text-align: center; /* Центрирование заголовка */
+    }
+
+    .container {
+        max-width: 700px; /* Увеличенная ширина контейнера */
+        margin: auto; /* Центрирование контейнера */
+        padding: 40px; /* Отступы внутри контейнера */
+        background-color: #fff; /* Белый фон для контейнера */
+        border-radius: 10px; /* Закругленные углы */
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Тень для контейнера */
     }
 
     .admin-links-container {
         display: flex;
-        justify-content: center; /* Центрируем кнопки горизонтально */
-        gap: 20px; /* Добавляем гэп между элементами */
+        justify-content: space-between; /* Равномерно распределяем кнопки */
+        flex-wrap: wrap; /* Позволяем кнопкам переноситься на следующую строку при необходимости */
+        gap: 20px; /* Промежуток между кнопками */
+        margin-top: 20px; /* Отступ сверху */
     }
 
-    .admin-link {
-        background-color: #8b00ff;
-        border-color: #8b00ff;
-        color: white;
-        padding: 10px 20px;
+    .btn-primary {
+        background-color: #6f42c1; /* Фон кнопки */
+        border: none; /* Убираем границу */
+        border-radius: 5px; /* Закругленные углы кнопки */
+        color: white; /* Цвет текста кнопки */
+        padding: 12px 20px; /* Увеличенные отступы */
+        font-size: 16px; /* Размер текста */
+        font-weight: 600; /* Жирный текст */
         text-align: center;
-        text-decoration: none;
-        display: inline-block;
-        font-size: 16px;
-        border-radius: 5px;
-        cursor: pointer;
-        border: none;
+        text-decoration: none; /* Убираем подчеркивание */
+        display: inline-block; /* Для ссылок */
+        cursor: pointer; /* Указатель мыши */
+        transition: background-color 0.3s; /* Плавный переход */
+        flex: 1; /* Каждая кнопка занимает равное пространство */
+        max-width: 200px; /* Ограничиваем ширину кнопок */
     }
 
-        .admin-link:hover {
-            background-color: #6a00b3; /* Немного более темный оттенок */
-            border-color: #6a00b3;
+        .btn-primary:hover {
+            background-color: #5e4b8a; /* Цвет кнопки при наведении */
         }
 
-    body {
-        background-color: #f9f9f9;
-        font-family: 'Arial', sans-serif;
+    .btn-link {
+        color: #6f42c1; /* Цвет ссылки */
+        text-decoration: none; /* Убираем подчеркивание */
     }
 
+        .btn-link:hover {
+            text-decoration: underline; /* Подчеркивание при наведении */
+        }
 </style>
 
-<div class="admin-panel-container">
-    <h3>Админ-панель</h3>
+<div class="container">
+    <h4 class="mb-4">Админ-панель</h4>
 
     <div class="admin-links-container">
-        <NavLink href="/usermanagement" class="admin-link">Управление пользователями</NavLink>
-        <NavLink href="/adminmovies" class="admin-link">Управление фильмами</NavLink>
-        <NavLink href="/adminmessages" class="admin-link">Управление фильмами</NavLink>
+        <NavLink href="/usermanagement" class="btn btn-primary">Управление пользователями</NavLink>
+        <NavLink href="/adminmovies" class="btn btn-primary">Управление фильмами</NavLink>
+        <NavLink href="/adminmessages" class="btn btn-primary">Управление сообщениями</NavLink>
     </div>
 </div>
