@@ -14,14 +14,14 @@
         <div class="chat-messages">
             @foreach (var msg in messages)
             {
-                <div class="chat-message">
-                    <NavLink href=@($"/userchat/{msg.UserId}?recipientName={msg.UserName}")>@msg.UserName</NavLink>:
+                <div class="chat-message @((msg.UserId == userId) ? "my-message" : "other-message")">
+                    <NavLink href=@($"/userchat/{msg.UserId}?recipientName={msg.UserName}") class="message-user">@msg.UserName</NavLink>:
                     @if (msg.Message.Contains("[Изображение:"))
                     {
                         var imagePath = msg.Message.Substring(msg.Message.IndexOf("[Изображение:") + "[Изображение: ".Length);
                         imagePath = imagePath.TrimEnd(']');
-                        <span>@msg.Message.Substring(0, msg.Message.IndexOf("[Изображение:"))</span> 
-                        <img src="@imagePath" alt="Image" style="max-width: 20%; border-radius: 8px; margin-top: 5px;" />
+                        <span>@msg.Message.Substring(0, msg.Message.IndexOf("[Изображение:"))</span>
+                        <img src="@imagePath" alt="Image" class="message-image" />
                     }
                     else
                     {
@@ -33,39 +33,33 @@
         </div>
 
         <div class="input-group">
-            <div class="input-group">
-                <InputFile OnChange="HandleSelectedFile" class="file-input" />
-                <input type="text" @bind="message" class="form-control" placeholder="Ваше сообщение..." />
-                <button @onclick="SendMessageGeneral" class="btn btn-send">📤</button>
-            </div>
+            <InputFile OnChange="HandleSelectedFile" class="file-input" />
+            <input type="text" @bind="message" class="form-control" placeholder="Ваше сообщение..." />
+            <button @onclick="SendMessageGeneral" class="btn btn-send">📤</button>
         </div>
     </div>
 </div>
 
 <style>
     body {
-        background-color: #f0f0f0;
-        font-family: 'Arial', sans-serif;
-        color: #333;
-        margin: 0;
-        padding: 0;
+        background-color: #f8f9fa; /* Светлый фон */
+        font-family: 'Arial', sans-serif; /* Шрифт */
     }
 
     .chat-panel-container {
-        max-width: 500px;
-        margin: 50px auto;
-        padding: 20px;
-        background-color: #ffffff;
-        border-radius: 10px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        max-width: 500px; /* Максимальная ширина контейнера */
+        margin: auto; /* Центрирование контейнера */
+        padding: 30px; /* Отступы внутри контейнера */
+        background-color: #ffffff; /* Белый фон для контейнера */
+        border-radius: 10px; /* Закругленные углы */
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Тень для контейнера */
         text-align: left;
     }
 
     .chat-title {
-        text-align: center;
-        color: #4a90e2;
-        margin-bottom: 20px;
-        font-size: 26px;
+        color: #5e4b8a; /* Цвет заголовка */
+        text-align: center; /* Центрирование заголовка */
+        margin-bottom: 20px; /* Отступ снизу */
     }
 
     .chat-container {
@@ -77,63 +71,87 @@
     .chat-messages {
         flex: 1;
         overflow-y: auto;
-        padding-right: 10px;
         margin-bottom: 10px;
+        padding-right: 10px;
+        border: 1px solid #ced4da; /* Рамка окна сообщений */
+        border-radius: 10px; /* Закругленные углы окна сообщений */
+        background: linear-gradient(to top, #f1f3f5, #e3f2fd); /* Градиент для фона окна сообщений */
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); /* Тень для окна сообщений */
+        padding: 15px; /* Отступы внутри окна сообщений */
     }
 
     .chat-message {
         margin: 10px 0;
         padding: 10px;
         border-radius: 8px;
-        background-color: #e3f2fd;
         position: relative;
+        transition: background-color 0.3s; /* Плавный переход */
     }
 
-        .chat-message strong {
-            color: #4a90e2;
-        }
+    .my-message {
+        background-color: #e2d3f3; /* Цвет фона для сообщения пользователя (фиолетовый) */
+        align-self: flex-end; /* Выравнивание сообщения пользователя вправо */
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Тень для сообщения пользователя */
+    }
+
+    .other-message {
+        background-color: #d1c4e9; /* Цвет фона для сообщений других пользователей (светло-фиолетовый) */
+        align-self: flex-start; /* Выравнивание сообщения других пользователей влево */
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Тень для сообщения других пользователей */
+    }
+
+    .message-user {
+        color: #4a90e2; /* Цвет имени пользователя */
+        font-weight: bold; /* Жирный шрифт */
+    }
 
     .message-time {
         font-size: 0.7em;
         position: absolute;
         bottom: 5px;
         right: 10px;
-        color: #888;
+        color: #888; /* Цвет времени */
     }
 
     .input-group {
         display: flex;
         align-items: center;
+        margin-top: 10px; /* Отступ сверху */
     }
 
     .form-control {
-        border: 1px solid #ccc;
-        background-color: #f9f9f9;
-        color: #333;
-        padding: 10px;
-        border-radius: 5px 0 0 5px;
-        flex: 1;
+        border: 1px solid #ced4da; /* Цвет рамки для полей ввода */
+        border-radius: 5px; /* Закругленные углы полей ввода */
+        padding: 10px; /* Отступ внутри поля */
+        flex: 1; /* Занимает оставшееся пространство */
+        margin-right: 10px; /* Отступ справа */
     }
 
-        .form-control::placeholder {
-            color: #bbb;
+        .form-control:focus {
+            border-color: #6f42c1; /* Цвет рамки при фокусе */
+            box-shadow: 0 0 5px rgba(111, 66, 193, 0.5); /* Тень при фокусе */
         }
 
     .btn-send {
-        background-color: #4a90e2;
-        border: none;
-        color: #ffffff;
-        padding: 10px;
-        border-radius: 0 5px 5px 0;
-        transition: background 0.3s ease;
-        cursor: pointer;
+        background-color: #6f42c1; /* Фон кнопки */
+        border: none; /* Убираем границу */
+        border-radius: 5px; /* Закругленные углы кнопки */
+        color: white; /* Цвет текста кнопки */
+        padding: 10px 15px; /* Отступы внутри кнопки */
+        transition: background-color 0.3s; /* Плавный переход */
+        cursor: pointer; /* Указатель при наведении */
     }
 
         .btn-send:hover {
-            background-color: #357ab8;
+            background-color: #5e4b8a; /* Цвет кнопки при наведении */
         }
-</style>
 
+    .message-image {
+        max-width: 20%; /* Максимальная ширина изображения */
+        border-radius: 8px; /* Закругленные углы изображения */
+        margin-top: 5px; /* Отступ сверху */
+    }
+</style>
 @code {
     string message = "";
     string userId = "";
@@ -148,7 +166,7 @@
     private Timer _timer;
     protected override async Task OnInitializedAsync()
     {
-        hubConnection = new HubConnectionBuilder().WithUrl("http://localhost:5082/generalHub").Build();
+        hubConnection = new HubConnectionBuilder().WithUrl("http://localhost:5183/generalHub").Build();
 
         await hubConnection.StartAsync();
         await hubConnection.SendAsync("JoinMovieGroup", movieId);
@@ -254,7 +272,7 @@
         {
             _timer.Dispose();
         }
-
+         
         if (hubConnection != null)
         {
             await hubConnection.SendAsync("LeaveMovieGroup", movieId);

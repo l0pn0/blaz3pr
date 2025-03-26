@@ -4,6 +4,9 @@
 @inject IJSRuntime JS
 @inject NavigationManager NavigationManager
 @rendermode InteractiveServer
+@using SixLabors.ImageSharp;
+@using SixLabors.ImageSharp.Processing;
+
 <style>
     body {
         background-color: #f8f9fa; /* Светлый фон */
@@ -27,58 +30,48 @@
         margin-bottom: 25px;
     }
 
-    .table {
-        width: 100%;
+    .user-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Сетка карточек */
+        gap: 20px; /* Расстояние между карточками */
         margin-top: 20px;
-        border-collapse: collapse;
-        border-radius: 10px;
-        overflow: hidden; /* Для скругления углов таблицы */
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Тень таблицы */
     }
 
-        .table th {
-            background-color: #6f42c1; /* Фиолетовый цвет заголовка */
-            color: white;
-            padding: 12px;
-            text-align: center;
+    .movie-card {
+        background-color: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Тень карточки */
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+        .movie-card:hover {
+            transform: scale(1.03); /* Легкое увеличение карточки */
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
         }
 
-        .table td {
-            padding: 12px;
-            border: 1px solid #dee2e6;
-            text-align: center;
+    .movie-info {
+        margin-bottom: 15px;
+    }
+
+        .movie-info p {
+            margin: 5px 0;
             font-size: 14px;
             color: #333;
         }
 
-        .table tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
+            .movie-info p span {
+                font-weight: bold;
+                color: #6f42c1;
+            }
 
-        .table tr:hover {
-            background-color: #f1f1f1;
-        }
-
-    .form-group {
-        margin-bottom: 20px;
+    .user-actions {
+        display: flex;
+        justify-content: space-between;
     }
-
-    .form-control {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        font-size: 14px;
-        color: #333;
-        box-shadow: none;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-        .form-control:focus {
-            border-color: #6f42c1; /* Фиолетовый цвет при фокусе */
-            box-shadow: 0 0 5px rgba(111, 66, 193, 0.3); /* Легкое свечение */
-            outline: none;
-        }
 
     .btn-warning,
     .btn-danger,
@@ -133,39 +126,64 @@
             transform: scale(1.05);
             box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
         }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #333;
+        box-shadow: none;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+        .form-control:focus {
+            border-color: #6f42c1; /* Фиолетовый цвет при фокусе */
+            box-shadow: 0 0 5px rgba(111, 66, 193, 0.3); /* Легкое свечение */
+            outline: none;
+        }
+
+    .movie-info img {
+        width: 200px; /* Фиксированная ширина */
+        height: 200px; /* Фиксированная высота */
+        object-fit: cover; /* Обрезка изображения для соответствия заданным размерам */
+        border-radius: 8px; /* Закругленные углы изображения */
+        margin-top: 10px; /* Отступ сверху */
+    }
 </style>
 
 <div class="container">
     <h3>Управление фильмами (Admin)</h3>
     <h4>Список фильмов</h4>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Название</th>
-                <th>Описание</th>
-                <th>Жанр</th>
-                <th>Рейтинг</th>
-                <th>Дата выхода</th>
-                <th>Действия</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var movie in movies)
-            {
-                <tr>
-                    <td>@movie.Title</td>
-                    <td>@movie.Description</td>
-                    <td>@movie.Genre</td>
-                    <td>@movie.Rating</td>
-                    <td>@movie.ReleaseDate.ToShortDateString()</td>
-                    <td>
-                        <button @onclick="() => EditMovie(movie)" class="btn btn-warning">Редактировать</button>
-                        <button @onclick="() => DeleteMovie(movie.Id)" class="btn btn-danger">Удалить</button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+
+    <div class="user-list">
+        @foreach (var movie in movies)
+        {
+            <div class="movie-card">
+                <div class="movie-info">
+                    <p><span>Название:</span> @movie.Title</p>
+                    <p><span>Описание:</span> @movie.Description</p>
+                    <p><span>Жанр:</span> @movie.Genre</p>
+                    <p><span>Рейтинг:</span> @movie.Rating</p>
+                    <p><span>Дата выхода:</span> @movie.ReleaseDate.ToShortDateString()</p>
+                    @if (!string.IsNullOrEmpty(movie.ImageUrl))
+                    {
+                        <img src="@movie.ImageUrl" alt="Фото фильма" />
+                    }
+                </div>
+                <div class="user-actions">
+                    <button @onclick="() => EditMovie(movie)" class="btn-warning">Редактировать</button>
+                    <button @onclick="() => DeleteMovie(movie.Id)" class="btn-danger">Удалить</button>
+                </div>
+            </div>
+        }
+    </div>
+
     <h4>@(isEditing ? "Редактировать фильм" : "Добавить новый фильм")</h4>
     <EditForm Model="newMovie" OnValidSubmit="isEditing ? HandleUpdateMovie : HandleCreateMovie" FormName="form">
         <DataAnnotationsValidator />
@@ -236,18 +254,26 @@
             {
                 var filePath = Path.Combine("wwwroot/images", selectedFile.Name);
 
+                // Проверьте, существует ли файл
                 if (!System.IO.File.Exists(filePath))
                 {
-                    var stream = selectedFile.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024);
-
-                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    // Открываем поток для чтения файла
+                    using (var stream = selectedFile.OpenReadStream(maxAllowedSize: 2 * 1024 * 1024))
+                    using (var image = await Image.LoadAsync(stream)) // Загружаем изображение
                     {
-                        await stream.CopyToAsync(fileStream);
+                        // Изменяем размер изображения
+                        image.Mutate(x => x.Resize(200, 200)); // Установите нужные размеры
+
+                        // Сохраняем измененное изображение в файл
+                        await image.SaveAsJpegAsync(filePath); // Сохраните изображение в формате JPEG
                     }
                 }
 
+                // Устанавливаем URL для изображения
                 newMovie.ImageUrl = $"/images/{selectedFile.Name}";
             }
+
+            // Обновляем фильм на сервере
             var response = await Http.PutAsJsonAsync($"api/Movie/{newMovie.Id}", newMovie);
             if (response.IsSuccessStatusCode)
             {
